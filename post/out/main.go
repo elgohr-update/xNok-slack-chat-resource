@@ -6,6 +6,7 @@ import (
     "os"
     "path/filepath"
     "fmt"
+    "strings"
     "github.com/jleben/slack-chat-resource/utils"
     "github.com/nlopes/slack"
 )
@@ -44,7 +45,7 @@ func main() {
         read_message_file(filepath.Join(source_dir,request.Params.MessageFile), message)
     } else {
         message = request.Params.Message
-        interpolate_message(message, source_dir)
+        interpolate_message(message, source_dir, &request)
     }
 
     {
@@ -63,7 +64,7 @@ func main() {
     }
 }
 
-func read_message_file(path string, message * utils.OutMessage) {
+func read_message_file(path string, message *utils.OutMessage) {
     file, open_err := os.Open(path)
     if open_err != nil {
         fatal("opening message file", open_err)
@@ -75,30 +76,30 @@ func read_message_file(path string, message * utils.OutMessage) {
     }
 }
 
-func interpolate_message(message * utils.OutMessage, source_dir string) {
-    message.Text = interpolate(message.Text, source_dir)
-    message.ThreadTimestamp = interpolate(message.ThreadTimestamp, source_dir)
+func interpolate_message(message *utils.OutMessage, source_dir string, request *utils.OutRequest) {
+    message.Text = interpolate(message.Text, source_dir, request)
+    message.ThreadTimestamp = interpolate(message.ThreadTimestamp, source_dir, request)
 
     for i := 0; i < len(message.Attachments); i++ {
         attachment := &message.Attachments[i]
 
-        attachment.Fallback = interpolate(attachment.Fallback, source_dir)
-        attachment.Title = interpolate(attachment.Title, source_dir)
-        attachment.TitleLink = interpolate(attachment.TitleLink, source_dir)
-        attachment.Pretext = interpolate(attachment.Pretext, source_dir)
-        attachment.Text = interpolate(attachment.Text, source_dir)
-        attachment.Footer = interpolate(attachment.Footer, source_dir)
+        attachment.Fallback = interpolate(attachment.Fallback, source_dir, request)
+        attachment.Title = interpolate(attachment.Title, source_dir, request)
+        attachment.TitleLink = interpolate(attachment.TitleLink, source_dir, request)
+        attachment.Pretext = interpolate(attachment.Pretext, source_dir, request)
+        attachment.Text = interpolate(attachment.Text, source_dir, request)
+        attachment.Footer = interpolate(attachment.Footer, source_dir, request)
 
         for j := 0; j < len(attachment.Fields); j++ {
             field := &attachment.Fields[j]
-            field.Title = interpolate(field.Title, source_dir)
-            field.Value = interpolate(field.Value, source_dir)
+            field.Title = interpolate(field.Title, source_dir, request)
+            field.Value = interpolate(field.Value, source_dir, request)
         }
 
         for k := 0; k < len(attachment.Actions); k++ {
             action := &attachment.Actions[k]
-            action.Text = interpolate(action.Text, source_dir)
-            action.URL = interpolate(action.URL, source_dir)
+            action.Text = interpolate(action.Text, source_dir, request)
+            action.URL = interpolate(action.URL, source_dir, request)
         }
     }
 }
@@ -117,7 +118,7 @@ func get_file_contents(path string) string {
     return string(data)
 }
 
-func interpolate(text string, source_dir string) string {
+func interpolate(text string, source_dir string, request *utils.OutRequest) string {
 
     var out_text string
 
@@ -133,13 +134,24 @@ func interpolate(text string, source_dir string) string {
                 end_var = pos + 1
 
                 var value string
+                var var_name_proc []string
 
                 if text[start_var+2] == '$' {
                     var_name := text[start_var+3:end_var-2]
+                    var_name_proc = strings.Split(var_name, "|")
+                    var_name = var_name_proc[0]
                     value = os.Getenv(var_name)
                 } else {
                     var_name := text[start_var+2:end_var-2]
+                    var_name_proc = strings.Split(var_name, "|")
+                    var_name = var_name_proc[0]
                     value = get_file_contents(filepath.Join(source_dir, var_name))
+                }
+
+                if len(var_name_proc) > 1{
+                    if var_name_proc[1] == "blame" {
+                        value = request.Source.SlackUserMap[value]
+                    }
                 }
 
                 out_text += value

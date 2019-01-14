@@ -20,6 +20,7 @@ type Source struct {
     ChannelId string `json:"channel_id"`
     Filter *MessageFilter `json:"matching"`
     ReplyFilter *MessageFilter `json:"not_replied_by"`
+    SlackUserMap map[string]string `json:"slack_user_map"`
 }
 
 type Version map[string]string
