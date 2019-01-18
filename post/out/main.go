@@ -115,7 +115,14 @@ func get_file_contents(path string) string {
         fatal("reading file", read_err)
     }
 
-    return string(data)
+    text := string(data) 
+
+    // clean the string from \n in last possition
+    if text[len(text)-2:] == "\n" {
+        text = text[:len(text)-2]
+    }
+        
+    return text
 }
 
 func interpolate(text string, source_dir string, request *utils.OutRequest) string {
