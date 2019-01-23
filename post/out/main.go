@@ -115,12 +115,10 @@ func get_file_contents(path string) string {
         fatal("reading file", read_err)
     }
 
-    text := string(data) 
+    text := string(data)
+    text = strings.TrimSuffix(text, "\n")
 
     // clean the string from \n in last possition
-    if text[len(text)-2:] == "\n" {
-        text = text[:len(text)-2]
-    }
         
     return text
 }
