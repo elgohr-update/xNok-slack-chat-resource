@@ -157,6 +157,12 @@ func interpolate(text string, source_dir string, request *utils.OutRequest) stri
 
                 if len(var_name_proc) > 1{
                     if var_name_proc[1] == "blame" {
+                        fmt.Fprintf(os.Stderr, "About to apply blame:\n")
+                        fmt.Fprintf(os.Stderr, value)
+                        fmt.Fprintf(os.Stderr, "\n")
+                        m, _ := json.MarshalIndent(request.Source.SlackUserMap, "", "  ")
+                        fmt.Fprintf(os.Stderr, "%s\n", m)
+                        fmt.Fprintf(os.Stderr, "\n")
                         value = request.Source.SlackUserMap[value]
                     }
                 }
