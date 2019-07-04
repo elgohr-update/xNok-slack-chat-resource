@@ -60,6 +60,7 @@ type OutRequest struct {
 type OutMessage struct {
     Text string `json:"text"`
     Attachments []slack.Attachment `json:"attachments"`
+    Blocks slack.Blocks `json:"blocks,omitempty"`
     slack.PostMessageParameters
 }
 

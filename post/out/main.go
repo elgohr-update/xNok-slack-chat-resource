@@ -41,6 +41,7 @@ func main() {
     var message *utils.OutMessage
 
     if len(request.Params.MessageFile) != 0 {
+        fmt.Fprintf(os.Stderr, "About to read this file:" + filepath.Join(source_dir,request.Params.MessageFile) + "\n")
         message = new(utils.OutMessage)
         read_message_file(filepath.Join(source_dir,request.Params.MessageFile), message)
     } else {
@@ -187,6 +188,7 @@ func send(message *utils.OutMessage, request *utils.OutRequest, slack_client *sl
     _, timestamp, err := slack_client.PostMessage(request.Source.ChannelId,
                                                     slack.MsgOptionText(message.Text, false),
                                                     slack.MsgOptionAttachments(message.Attachments...),
+                                                    slack.MsgOptionBlocks(message.Blocks.BlockSet...),
                                                     slack.MsgOptionPostMessageParameters(message.PostMessageParameters))
 
     if err != nil {

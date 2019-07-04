@@ -181,6 +181,8 @@ The following fields of an attachment support string interpolation:
 - `text`
 - `footer`
 
+The `attahements` are also interpolated. (`blocks` are not)
+
 ### Example
 
 Consider a job with the `get: slack-in` step from the example above followed by this step:

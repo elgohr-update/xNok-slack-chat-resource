@@ -1,0 +1,12 @@
+{
+    "text": "aaaa",
+    "blocks": [
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "You have a new request:\n*<fakeLink.toEmployeeProfile.com|Fred Enriquez - New device request>*"
+            }
+        }
+    ]
+}

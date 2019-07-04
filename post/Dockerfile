@@ -2,8 +2,10 @@
 FROM golang:alpine as build-env
 RUN apk update
 RUN apk add git
-RUN go get github.com/nlopes/slack
+RUN go get -u github.com/golang/dep/cmd/dep
 COPY ./utils /go/src/github.com/jleben/slack-chat-resource/utils
+COPY Gopkg.toml /go/src/github.com/jleben/slack-chat-resource
+RUN ( cd /go/src/github.com/jleben/slack-chat-resource ; dep ensure )
 RUN go build -o /assets/utils github.com/jleben/slack-chat-resource/utils
 
 FROM build-env as build-post
