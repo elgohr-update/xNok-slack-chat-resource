@@ -195,10 +195,9 @@ This will reply to the message read by the `get` step (since `thread` is the tim
 
     Hi abc! I will do 123 right away!
 
+
+
 ### `get`: Get the timestammp of the last message
-
-
-### Example
 
 Considere the use case where you what only **build** message to be send to the slack channel and all other messages (deploy, analysis, etc) to be send in a thread related to that build.
 
@@ -206,10 +205,37 @@ Considere the use case where you what only **build** message to be send to the s
 
 ```
 name: deploy
+plan:
 - get: slack-out
   passed: [build]
 - put: slack-out-thread
       params:
         message:
             thread_ts: "{{slack-out/timestamp}}"
+```
+
+### Use helpers
+
+#### blame someone in slack
+
+The interpolation integrate an helper collad `blame`. Given that you provide map `slack_user_map` containing **user_email:user_slack_id** in the `source` definition. Then you can use the helper `blame` in the interpolation **<@{{*variable ot file to interpolate*|blame}}>**.
+
+```
+resources:
+# Ressource pour envoyer des messages slack
+- name: slack-out
+  type: slack-post-resource
+  source:
+    token: ((slack.token))
+    channel_id: ((slack.channel_id))
+    slack_user_map:
+      - user@email.com: SLACKID
+      - user2@email.com: SLACKID
+
+name: deploy
+plan:
+- put: slack-out
+  params:
+    message:
+        text: "<@{{git/.git/committer|blame}}>"
 ```
