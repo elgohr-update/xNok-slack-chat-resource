@@ -4,10 +4,11 @@ This repository provides Concourse resource types to read, act on, and reply to 
 
 There are two resource types:
 
-- `slack-read-resource`: For reading messages.
-- `slack-post-resource`: For posting messages.
+- `slack-read-resource`: For reading messages. (uses [chat.postMessage](https://api.slack.com/methods/chat.postMessage))
+- `slack-post-resource`: For posting/updating messages. (uses [channels.history](https://slack.com/api/channels.history) or [chat.update](https://api.slack.com/methods/chat.update))
+- `slack-search-resource`: For searching messages. (use [search.messages](https://api.slack.com/methods/search.messages))
 
-There are two resource types because a system does not want to respond to messages that it posts itself. Concourse assumes that an output of a resource is also a valid input. Therefore, separate resources are used for reading and posting. Since using a single resource has no benefits over separate resources, reading and posting are split into two resource types.
+There are multiple resource types because a system does not want to respond to messages that it posts itself. Concourse assumes that an output of a resource is also a valid input. Therefore, separate resources are used for reading and posting. Since using a single resource has no benefits over separate resources, reading and posting are split into two resource types.
 
 The posting resource offers similar functionality to the older
 [slack-notification-resource](https://github.com/cloudfoundry-community/slack-notification-resource),
@@ -19,8 +20,14 @@ with the following benefits:
 
 Docker Store:
 
-- [jakobleben/slack-read-resource](https://store.docker.com/community/images/jakobleben/slack-read-resource)
-- [jakobleben/slack-post-resource](https://store.docker.com/community/images/jakobleben/slack-post-resource)
+- [xnok/slack-read-resource](https://store.docker.com/community/images/xnok/slack-read-resource)
+- [xnok/slack-post-resource](https://store.docker.com/community/images/xnok/slack-post-resource)
+- [xnok/slack-search-resource](https://store.docker.com/community/images/xnok/slack-post-resource)
+
+## Create a bot
+
+To use these ressources you need to [create a slack application](https://api.slack.com/apps)
+You need to be carefull about the scope of you newly ceated bot. Add the scope you need `chat.postMessage`, `chat.update`,` channels.history`, `search.messages`
 
 ## Version Format
 
@@ -37,8 +44,8 @@ Usage in a pipeline:
     resource_types:
         - name: slack-read-resource
           type: docker-image
-          source:
-            repository: jakobleben/slack-read-resource
+          source: {}
+            repository: xnok/slack-read-resource
 
     resources:
         - name: slack-in
@@ -113,6 +120,38 @@ When this configuration sees a message with the text `abc 123` and timestamp `11
 - `text_part1`: `abc`
 - `text_part2`: `123`
 
+## Searching Messages (slack-serch-resource)
+
+Usage in a pipeline:
+
+    resource_types:
+        - name: slack-search-resource
+          type: docker-image
+          source: {}
+            repository: xnok/slack-search-resource
+
+    resources:
+        - name: slack-search
+          type: slack-search-resource
+          source: ...
+
+### Source Configuration
+
+The `source` field configures the resource for reading messages from a specific channel. It allows filtering messages by their author and text pattern:
+
+- `token`: *Required*. A Slack API token that allows reading all messages on a selected channel.
+- `channel_id`: *Required*. The selected channel ID. The resource only reads messages on this channel.
+- `query`: *Optional*. Only report messages matching this filter. See [search.messages](https://api.slack.com/methods/search.messages) for details.
+
+#### Example
+
+    resources:
+      - name: slack-in
+        type: slack-read-resource
+        source:
+          token: "xxxx-xxxxxxxxxx-xxxx"
+          channel_id: "C11111111"
+          query: ((project_id))
 
 ## Posting Messages (slack-post-resource)
 
