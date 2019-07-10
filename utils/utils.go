@@ -16,11 +16,16 @@ type MessageFilter struct {
 }
 
 type Source struct {
+    //all
     Token string `json:"token"`
     ChannelId string `json:"channel_id"`
+    // read
     Filter *MessageFilter `json:"matching"`
     ReplyFilter *MessageFilter `json:"not_replied_by"`
+    // post / update
     SlackUserMap map[string]string `json:"slack_user_map"`
+    // search
+    Query string `json:"query"`
 }
 
 type Version map[string]string
@@ -50,6 +55,7 @@ type InParams struct {
 type OutParams struct {
     Message *OutMessage `json:"message"`
     MessageFile string `json:"message_file"`
+    Ts string `json:"update_ts"`
 }
 
 type OutRequest struct {

@@ -57,7 +57,14 @@ func main() {
 
     slack_client := slack.New(request.Source.Token)
 
-    response := send(message, &request, slack_client)
+    var response utils.OutResponse
+
+    if len(request.Params.Ts) == 0 {
+        response = send(message, &request, slack_client)
+    }else{
+        request.Params.Ts = interpolate(request.Params.Ts, source_dir, &request)
+        response = update(message, &request, slack_client)
+    }
 
     response_err := json.NewEncoder(os.Stdout).Encode(&response)
     if response_err != nil {
@@ -183,13 +190,34 @@ func interpolate(text string, source_dir string, request *utils.OutRequest) stri
     return out_text
 }
 
+func update(message *utils.OutMessage, request *utils.OutRequest, slack_client *slack.Client) utils.OutResponse {
+
+    fmt.Fprintf(os.Stderr, "About to post an update message: " + request.Params.Ts  + "\n")
+    _, timestamp, _, err := slack_client.UpdateMessage(request.Source.ChannelId,
+        request.Params.Ts,
+        slack.MsgOptionText(message.Text, false),
+        slack.MsgOptionAttachments(message.Attachments...),
+        slack.MsgOptionBlocks(message.Blocks.BlockSet...),
+        slack.MsgOptionPostMessageParameters(message.PostMessageParameters))
+
+    if err != nil {
+        fatal("sending", err)
+    }
+
+    var response utils.OutResponse
+    response.Version = utils.Version { "timestamp": timestamp }
+    return response
+}
+
 func send(message *utils.OutMessage, request *utils.OutRequest, slack_client *slack.Client) utils.OutResponse {
 
+    fmt.Fprintf(os.Stderr, "About to post a new message \n")
     _, timestamp, err := slack_client.PostMessage(request.Source.ChannelId,
-                                                    slack.MsgOptionText(message.Text, false),
-                                                    slack.MsgOptionAttachments(message.Attachments...),
-                                                    slack.MsgOptionBlocks(message.Blocks.BlockSet...),
-                                                    slack.MsgOptionPostMessageParameters(message.PostMessageParameters))
+        slack.MsgOptionText(message.Text, false),
+        slack.MsgOptionAttachments(message.Attachments...),
+        slack.MsgOptionBlocks(message.Blocks.BlockSet...),
+        slack.MsgOptionPostMessageParameters(message.PostMessageParameters))
+
 
     if err != nil {
         fatal("sending", err)
