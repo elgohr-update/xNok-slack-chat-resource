@@ -44,9 +44,12 @@ func main() {
         fmt.Fprintf(os.Stderr, "About to read this file:" + filepath.Join(source_dir,request.Params.MessageFile) + "\n")
         message = new(utils.OutMessage)
         read_message_file(filepath.Join(source_dir,request.Params.MessageFile), message)
-    } else {
-        fmt.Fprintf(os.Stderr, "About process message (interpolation)\n")
+    }else{
         message = request.Params.Message
+    }
+    
+    {
+        fmt.Fprintf(os.Stderr, "About process message (interpolation)\n")
         interpolate_message(message, source_dir, &request)
     }
 
