@@ -45,6 +45,7 @@ func main() {
         message = new(utils.OutMessage)
         read_message_file(filepath.Join(source_dir,request.Params.MessageFile), message)
     } else {
+        fmt.Fprintf(os.Stderr, "About process message (interpolation)\n")
         message = request.Params.Message
         interpolate_message(message, source_dir, &request)
     }
@@ -154,11 +155,13 @@ func interpolate(text string, source_dir string, request *utils.OutRequest) stri
                     var_name_proc = strings.Split(var_name, "|")
                     var_name = var_name_proc[0]
                     value = os.Getenv(var_name)
+                    fmt.Fprintf(os.Stderr, "- Interpolating "+ var_name +"\n")
                 } else {
                     var_name := text[start_var+2:end_var-2]
                     var_name_proc = strings.Split(var_name, "|")
                     var_name = var_name_proc[0]
                     value = get_file_contents(filepath.Join(source_dir, var_name))
+                    fmt.Fprintf(os.Stderr, "- Interpolating "+ var_name +"\n")
                 }
 
                 if len(var_name_proc) > 1{
