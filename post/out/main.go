@@ -66,7 +66,7 @@ func main() {
     if len(request.Params.Ts) == 0 {
         response = send(message, &request, slack_client)
     }else{
-        request.Params.Ts = interpolate(request.Params.Ts, source_dir, &request)
+        request.Params.Ts = get_file_contents(filepath.Join(source_dir, request.Params.Ts))
         response = update(message, &request, slack_client)
     }
 
@@ -113,6 +113,42 @@ func interpolate_message(message *utils.OutMessage, source_dir string, request *
             action.Text = interpolate(action.Text, source_dir, request)
             action.URL = interpolate(action.URL, source_dir, request)
         }
+    }
+
+    for _, block := range message.Blocks.BlockSet {
+		switch block.BlockType() {
+		case slack.MBTContext:
+			contextElements := block.(*slack.ContextBlock).ContextElements.Elements
+			for _, elem := range contextElements {
+				switch elem.MixedElementType() {
+				case slack.MixedElementImage:
+					// Assert the block's type to manipulate/extract values
+					imageBlockElem := elem.(*slack.ImageBlockElement)
+					imageBlockElem.ImageURL = interpolate(imageBlockElem.ImageURL, source_dir, request)
+					imageBlockElem.AltText = interpolate(imageBlockElem.ImageURL, source_dir, request)
+				case slack.MixedElementText:
+					textBlockElem := elem.(*slack.TextBlockObject)
+					textBlockElem.Text = interpolate(textBlockElem.Text, source_dir, request)
+				}
+			}
+		case slack.MBTAction:
+			// no interpolation
+        case slack.MBTImage:
+            elements :=  block.(*slack.ImageBlock)
+            elements.ImageURL = interpolate(elements.ImageURL, source_dir, request)
+            elements.Title.Text = interpolate(elements.Title.Text, source_dir, request)
+		case slack.MBTSection:
+            elements :=  block.(*slack.SectionBlock)
+            elements.Text.Text = interpolate(elements.Text.Text, source_dir, request)
+
+            for _, field := range elements.Fields {
+                field.Text = interpolate(field.Text, source_dir, request)
+            }
+
+            // elements.Accessory  // no interpolation
+		case slack.MBTDivider:
+            // no interpolation
+		}
     }
 }
 
