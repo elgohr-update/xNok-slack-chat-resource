@@ -23,26 +23,26 @@ func main() {
 
 	err = json.NewDecoder(os.Stdin).Decode(&request)
 	if err != nil {
-		fatal("Parsing request.", err)
+		utils.Fatal("Parsing request.", err)
 	}
 
 	if len(request.Source.Token) == 0 {
-        fatal1("Missing source field: token.")
+        utils.Fatal1("Missing source field: token.")
     }
 
     if len(request.Source.ChannelId) == 0 {
-        fatal1("Missing source field: channel_id.")
+        utils.Fatal1("Missing source field: channel_id.")
     }
 
 	if _,ok := request.Version["timestamp"]; !ok {
-        fatal1("Missing version field: timestamp")
+        utils.Fatal1("Missing version field: timestamp")
     }
 
     {
         fmt.Fprintf(os.Stderr,"Request version: %v\n", request.Version["timestamp"])
         err := ioutil.WriteFile(filepath.Join(destination, "timestamp"), []byte(request.Version["timestamp"]) , 0644)
         if err != nil {
-            fatal("writing timestamp file", err)
+            utils.Fatal("writing timestamp file", err)
         }
     }
 
@@ -52,11 +52,39 @@ func main() {
 
     err = json.NewEncoder(os.Stdout).Encode(&response)
     if err != nil {
-        fatal("encoding response", err)
+        utils.Fatal("encoding response", err)
     }
 }
 
-func get(request *utils.InRequest, destination string, slack_client *slack.Client) utils.InResponse {
+func search_message(request *utils.InRequest, slack_client *slack.Client) slack.Message {
+
+    params := slack.NewSearchParameters()
+
+    slack_client.SearchMessages(request.Params.Query, params)
+
+    var searchmessages *slack.SearchMessages
+    searchmessages, err := slack_client.SearchMessages(request.Source.Query, params)
+    if err != nil {
+        utils.Fatal("getting messages.", err)
+    }
+
+	if len(searchmessages.Matches) < 1 {
+        utils.Fatal1("Message could not be found.")
+    }
+
+    searchmessage := searchmessages.Matches[0]
+
+    var message slack.Message
+
+    message.Msg.Text = searchmessage.Text
+    message.Msg.Attachments  = searchmessage.Attachments
+    message.Msg.Blocks  = searchmessage.Blocks
+    message.Msg.Timestamp = searchmessage.Timestamp
+    
+    return message
+}
+
+func get_message(request *utils.InRequest, slack_client *slack.Client) slack.Message {
 
     params := slack.NewHistoryParameters()
     params.Latest = request.Version["timestamp"]
@@ -65,14 +93,32 @@ func get(request *utils.InRequest, destination string, slack_client *slack.Clien
 
     history, history_err := slack_client.GetChannelHistory(request.Source.ChannelId, params)
     if history_err != nil {
-		fatal("getting message", history_err)
+		utils.Fatal("getting message", history_err)
 	}
 
 	if len(history.Messages) < 1 {
-        fatal1("Message could not be found.")
+        utils.Fatal1("Message could not be found.")
     }
 
     message := history.Messages[0]
+
+    return message
+}
+
+func get(request *utils.InRequest, destination string, slack_client *slack.Client) utils.InResponse {
+
+    var message slack.Message
+
+    query := func() string { if len(request.Params.Query) > 0 { return request.Params.Query } else { return request.Source.Query } }()
+    query = utils.Interpolate(query, destination, &request.Source)
+
+    if len(request.Params.Query) != 0 {
+        fmt.Fprintf(os.Stderr, "Searching based on the specify query: %s\n", request.Params.Query)
+        message = search_message(request, slack_client)
+    }else{
+        fmt.Fprintf(os.Stderr, "Getting the message provided by check\n")
+        message = get_message(request, slack_client)
+    }
 
     fmt.Fprintf(os.Stderr, "Text: %s\n", message.Msg.Text)
 
@@ -88,7 +134,7 @@ func get(request *utils.InRequest, destination string, slack_client *slack.Clien
         file, _ := json.MarshalIndent(message, "", " ")
         err := ioutil.WriteFile(filepath.Join(destination, "message"), file, 0644)
         if err != nil {
-            fatal("writing text file", err)
+            utils.Fatal("writing text file", err)
         }
     }
 
@@ -102,7 +148,7 @@ func get(request *utils.InRequest, destination string, slack_client *slack.Clien
     {
         err := ioutil.WriteFile(filepath.Join(destination, "text"), []byte(message.Msg.Text), 0644)
         if err != nil {
-            fatal("writing text file", err)
+            utils.Fatal("writing text file", err)
         }
     }
 
@@ -112,28 +158,19 @@ func get(request *utils.InRequest, destination string, slack_client *slack.Clien
         filename := fmt.Sprintf("text_part%d", i)
         err := ioutil.WriteFile(filepath.Join(destination, filename), []byte(part), 0644)
         if err != nil {
-            fatal("writing text part file", err)
+            utils.Fatal("writing text part file", err)
         }
     }
 
     {
         err := ioutil.WriteFile(filepath.Join(destination, "timestamp"), []byte(message.Msg.Timestamp), 0644)
         if err != nil {
-            fatal("writing timestamp file", err)
+            utils.Fatal("writing timestamp file", err)
         }
     }
 
     var response utils.InResponse
-    response.Version = request.Version
+    response.Version = utils.Version{ "timestamp": message.Msg.Timestamp }
+    response.Metadata = append(response.Metadata, utils.MetadataField{Name: "Query", Value: query})
     return response
-}
-
-func fatal1(reason string) {
-    fmt.Fprintf(os.Stderr, reason + "\n")
-    os.Exit(1)
-}
-
-func fatal(doing string, err error) {
-    fmt.Fprintf(os.Stderr, "Error " + doing + ": " + err.Error() + "\n")
-    os.Exit(1)
 }
