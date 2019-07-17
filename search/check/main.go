@@ -45,6 +45,9 @@ func main() {
     for _, msg := range messages.Matches {
         version := utils.Version{ "timestamp": msg.Timestamp }
         versions = append(versions, version)
+
+        m, _ := json.MarshalIndent(msg, "", "  ")
+        fmt.Fprintf(os.Stderr, "%s\n", m)
     }
 
     response := utils.CheckResponse{}

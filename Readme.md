@@ -15,6 +15,7 @@ The posting resource offers similar functionality to the older
 with the following benefits:
 
 - Support for replying to threads.
+- Support for updating messages.
 - More powerful interpolation of contents of arbitrary files into message text and other parameters.
 - Written in Go as opposed to Bash, in case you care about this :).
 
@@ -120,7 +121,7 @@ When this configuration sees a message with the text `abc 123` and timestamp `11
 - `text_part1`: `abc`
 - `text_part2`: `123`
 
-## Searching Messages (slack-serch-resource)
+## Searching Messages (slack-search-resource)
 
 Usage in a pipeline:
 
@@ -194,12 +195,13 @@ Parameters:
 
 - `message`: *Optional*. The message to send described in YAML.
 - `message_file`: *Optional*. The file containing the message to send described in JSON.
+- `update_ts`: *Optional*. Instead of pusting new message update this message. (support interpolation see below)
 
 Either `message` or `message_file` must be present. If both are present, `message_file` takes precedence and `message` is ignored.
 
 The message is described just as the argument to the [`chat.postMessage`](https://api.slack.com/methods/chat.postMessage) method of the Slack API. All fields are supported, except that `token` and `channel` are ignored and instead the resource configuration in `source` is used.
 
-When using `message`, some message parameters support string interpolation to insert contents of arbitrary files or values of environment variables. The following table gives rules for substitution:
+When using `message` and `message_file`, some message parameters support string interpolation to insert contents of arbitrary files or values of environment variables. The following table gives rules for substitution:
 
 | Pattern | Substituted By |
 |---------|----------------|
