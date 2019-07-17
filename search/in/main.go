@@ -125,7 +125,7 @@ func get(request *utils.InRequest, destination string, slack_client *slack.Clien
     {
         err := os.MkdirAll(destination, 0755)
         if err != nil {
-            fatal("creating destination directory", err)
+            utils.Fatal("creating destination directory", err)
         }
     }
 
