@@ -185,10 +185,14 @@ func Get_file_contents(path string) string {
     }
 
     text := string(data)
+    // clean the string from \n in last possition
     text = strings.TrimSuffix(text, "\n")
 
-    // clean the string from \n in last possition
-        
+    // slack limits text to 3000char. So to avoid erros we truncate long strings 
+    if len(text) > 3000 {
+		text = text[0:2990] + "\n..."
+	}
+ 
     return text
 }
 
