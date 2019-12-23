@@ -167,9 +167,9 @@ func Interpolate(text string, source_dir string, source *Source) string {
 
 func Get_file_contents(path string) string {
 
-    matched, err := Glob(path)
-    if open_err != nil {
-        err("Gloing Pattern", open_err)
+    matched, glob_err := filepath.Glob(path)
+    if glob_err != nil {
+        Fatal("Gloing Pattern", glob_err)
     }
 
     path = matched[0]
